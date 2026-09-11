@@ -259,6 +259,27 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  // Auth: Users List
+  if (pathname === '/api/auth/users' && method === 'GET') {
+    return sendJSON(res, state.users);
+  }
+
+  // Event: Create Event
+  if (pathname === '/api/events' && method === 'POST') {
+    const body = await parseBody(req);
+    const newEvent = {
+      id: state.events.length + 1,
+      title: body.title || "Custom Event",
+      expectedGuests: parseInt(body.expectedGuests || body.guestCount || 100),
+      eventDate: body.eventDate || new Date().toISOString().split('T')[0],
+      venue: body.venue || "Hyderabad Convention Center",
+      budget: parseFloat(body.budget || 100000),
+      status: "PLANNING"
+    };
+    state.events.unshift(newEvent);
+    return sendJSON(res, newEvent, 201);
+  }
+
   // Events List
   if (pathname === '/api/events' && method === 'GET') {
     return sendJSON(res, state.events);
@@ -278,9 +299,73 @@ module.exports = async function handler(req, res) {
     return sendJSON(res, filtered);
   }
 
-  // Orders
+  // Orders: List Orders
   if (pathname === '/api/orders' && method === 'GET') {
     return sendJSON(res, state.orders);
+  }
+
+  // Orders: Create Bulk Order
+  if (pathname === '/api/orders' && method === 'POST') {
+    const body = await parseBody(req);
+    const amt = Number(body.grandTotal || body.totalAmount || 191835);
+    const newOrder = {
+      id: body.id || ("ORD-" + Math.floor(100000 + Math.random() * 900000)),
+      orderNumber: body.orderNumber || ("EFM-" + Date.now().toString().slice(-6)),
+      eventId: body.eventId || 1,
+      eventTitle: body.eventTitle || "KL University Annual Tech Symposium & Hackathon",
+      organizerId: body.organizerId || 1,
+      organizerName: body.organizerName || "Durga Prasad Reddy",
+      vendorId: body.vendorId || 1,
+      vendorName: body.vendorName || "Royal Feast Grand Caterers",
+      guestCount: Number(body.guestCount) || 250,
+      totalAmount: amt,
+      discountAmount: Number(body.discountAmount) || 0,
+      taxAmount: Number(body.taxAmount) || Math.round(amt * 0.05),
+      grandTotal: amt,
+      status: "PLACED",
+      deliveryStatus: "PLACED",
+      stageIndex: 0,
+      deliveryDate: body.deliveryDate || "2026-10-18",
+      deliverySlot: body.deliverySlot || "12:30 PM - 02:30 PM",
+      deliveryVenue: body.deliveryVenue || "Main Auditorium, Hyderabad",
+      specialRequests: body.specialRequests || "",
+      items: body.items || [
+        { id: 1, itemName: "Shahi Royal Feast Buffet Catering", lineTotal: amt, quantityOrGuests: body.guestCount || 250 }
+      ],
+      stages: ["Order Confirmed", "Kitchen Preparation", "Quality & Thermal Sealed", "In Transit (Cold-Chain Active)", "Delivered & Buffet Set"],
+      vehicleTelemetry: {
+        tempSalad: "4.0°C",
+        tempMains: "70.0°C",
+        driverName: "Suresh Rao",
+        driverPhone: "+91 98480 11223",
+        vehicleNo: "TS 09 UB 4821",
+        gpsLocation: "Kitchen Dispatch Hub, Jubilee Hills",
+        etaMinutes: 45
+      },
+      paymentStatus: "PAID",
+      createdAt: new Date().toISOString()
+    };
+    state.orders.unshift(newOrder);
+    return sendJSON(res, {
+      ...newOrder,
+      status: "ORDER_PLACED_SUCCESS",
+      service: "ORDER-SERVICE [Port 8084]",
+      order: newOrder
+    }, 201);
+  }
+
+  // Orders: Update Status (Kitchen Hub)
+  if (pathname.startsWith('/api/orders/') && pathname.endsWith('/status') && method === 'POST') {
+    const parts = pathname.split('/');
+    const orderId = parts[3];
+    const body = await parseBody(req);
+    const order = state.orders.find(o => o.id === orderId || o.orderNumber === orderId);
+    if (order) {
+      order.deliveryStatus = body.status || order.deliveryStatus;
+      if (body.stageIndex !== undefined) order.stageIndex = body.stageIndex;
+      return sendJSON(res, { status: "STATUS_UPDATED", order });
+    }
+    return sendJSON(res, { error: "Order not found" }, 404);
   }
 
   // Payment Sim
