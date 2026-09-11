@@ -4,7 +4,8 @@
   "description": "Online Food & Delivery Event Food Management System with SOA Microservices & AI Agent",
   "main": "server.js",
   "scripts": {
-    "build": "npm run build --prefix frontend",
+    "postinstall": "cd frontend && npm install",
+    "build": "cd frontend && npm install && npm run build",
     "start": "node server.js",
     "dev": "node server.js"
   },
