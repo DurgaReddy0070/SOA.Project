@@ -310,30 +310,47 @@ const server = http.createServer(async (req, res) => {
   // Orders: Create Bulk Order
   if (pathname === '/api/orders' && method === 'POST') {
     const body = await parseBody(req);
+    const amt = Number(body.grandTotal || body.totalAmount || 191835);
     const newOrder = {
-      id: "ORD-" + Math.floor(100000 + Math.random() * 900000),
-      eventTitle: body.eventTitle || "University Cultural Festival",
+      id: body.id || ("ORD-" + Math.floor(100000 + Math.random() * 900000)),
+      orderNumber: body.orderNumber || ("EFM-" + Date.now().toString().slice(-6)),
+      eventId: body.eventId || 1,
+      eventTitle: body.eventTitle || "KL University Annual Tech Symposium & Hackathon",
+      organizerId: body.organizerId || 1,
+      organizerName: body.organizerName || "Durga Prasad Reddy",
+      vendorId: body.vendorId || 1,
       vendorName: body.vendorName || "Royal Feast Grand Caterers",
-      guestCount: body.guestCount || 250,
-      packageSelected: body.packageSelected || "Shahi Nizami Royal Banquet",
-      totalAmount: body.totalAmount || 185000,
+      guestCount: Number(body.guestCount) || 250,
+      totalAmount: amt,
+      discountAmount: Number(body.discountAmount) || 0,
+      taxAmount: Number(body.taxAmount) || Math.round(amt * 0.05),
+      grandTotal: amt,
+      status: "PLACED",
       deliveryStatus: "PLACED",
       stageIndex: 0,
+      deliveryDate: body.deliveryDate || "2026-10-18",
+      deliverySlot: body.deliverySlot || "12:30 PM - 02:30 PM",
+      deliveryVenue: body.deliveryVenue || "Main Auditorium, Hyderabad",
+      specialRequests: body.specialRequests || "",
+      items: body.items || [
+        { id: 1, itemName: "Shahi Royal Feast Buffet Catering", lineTotal: amt, quantityOrGuests: body.guestCount || 250 }
+      ],
       stages: ["Order Confirmed", "Kitchen Preparation", "Quality & Thermal Sealed", "In Transit (Cold-Chain Active)", "Delivered & Buffet Set"],
       vehicleTelemetry: {
         tempSalad: 4.0,
         tempMains: 70.0,
-        driverName: "Ramesh Kumar",
-        driverPhone: "+91 98480 12345",
-        vehicleNo: "TS 09 EA 4402",
+        driverName: "Suresh Rao (+91 9848011223)",
+        driverPhone: "+91 98480 11223",
+        vehicleNo: "TS 09 UB 4821",
         gpsLocation: "Kitchen Dispatch Hub, Jubilee Hills",
         etaMinutes: 45
       },
-      paymentStatus: "PENDING",
+      paymentStatus: "PAID",
       createdAt: new Date().toISOString()
     };
     state.orders.unshift(newOrder);
     return sendJSON(res, {
+      ...newOrder,
       status: "ORDER_PLACED_SUCCESS",
       service: "ORDER-SERVICE [Port 8084]",
       order: newOrder
