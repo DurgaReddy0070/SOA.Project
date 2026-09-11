@@ -23,12 +23,14 @@ export default function App() {
   const [orders, setOrders] = useState(initialOrders || []);
   const [activeEvent, setActiveEvent] = useState(initialEvents?.[0] || null);
 
-  const [trayItems, setTrayItems] = useState([
+  const defaultStarterTray = [
     { id: 101, name: 'Paneer Tikka Angara', price: 140, vendorId: 1, vendorName: 'Royal Feast Grand Caterers', category: 'STARTER', dietaryType: 'VEG' },
     { id: 201, name: 'Jain Shahi Paneer (Satvik)', price: 150, vendorId: 3, vendorName: 'Green Leaf Pure Veg & Jain Kitchen', category: 'MAIN_COURSE', dietaryType: 'JAIN' },
     { id: 301, name: 'Hyderabadi Zafrani Mutton Dum Biryani', price: 320, vendorId: 1, vendorName: 'Royal Feast Grand Caterers', category: 'BREADS_RICE', dietaryType: 'NON_VEG' },
     { id: 501, name: 'Shahi Tukda with Malai Rabdi', price: 90, vendorId: 1, vendorName: 'Royal Feast Grand Caterers', category: 'DESSERT', dietaryType: 'VEG' }
-  ]);
+  ];
+
+  const [trayItems, setTrayItems] = useState(defaultStarterTray);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   // Load initial data from APIs or fallback
@@ -63,11 +65,18 @@ export default function App() {
   const handleEventCreated = (newEvent) => {
     setEvents([newEvent, ...events]);
     setActiveEvent(newEvent);
-    setActiveTab('vendors');
+    // Ensure tray has items for the new event to generate bill cost immediately
+    if (trayItems.length === 0) {
+      setTrayItems(defaultStarterTray);
+    }
+    setActiveTab('menu-planner');
   };
 
   const handleSelectEventForMenu = (event) => {
     setActiveEvent(event);
+    if (trayItems.length === 0) {
+      setTrayItems(defaultStarterTray);
+    }
     setActiveTab('menu-planner');
   };
 

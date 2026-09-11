@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ChefHat,
   Plus,
@@ -9,7 +9,9 @@ import {
   Sparkles,
   Info,
   CheckCircle2,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Receipt,
+  RotateCcw
 } from 'lucide-react';
 
 export default function MenuPlanner({
@@ -21,7 +23,14 @@ export default function MenuPlanner({
   onProceedToOrder
 }) {
   const [activeCategory, setActiveCategory] = useState('STARTER');
-  const [guestCount, setGuestCount] = useState(activeEvent?.expectedGuests || 250);
+  const [guestCount, setGuestCount] = useState(Number(activeEvent?.expectedGuests) || 250);
+
+  // Sync guestCount whenever activeEvent changes
+  useEffect(() => {
+    if (activeEvent?.expectedGuests) {
+      setGuestCount(Number(activeEvent.expectedGuests));
+    }
+  }, [activeEvent]);
 
   const categories = [
     { id: 'STARTER', label: 'Starters & Appetizers', count: 6 },
@@ -265,13 +274,40 @@ export default function MenuPlanner({
 
   const filteredDishes = dishCatalog.filter(d => d.category === activeCategory);
 
-  // Calculate Tray totals
-  const costPerPerson = trayItems.reduce((acc, item) => acc + (Number(item.price) || 0), 0);
-  const estimatedSubtotal = costPerPerson * guestCount;
-  const bulkDiscount = guestCount >= 250 ? estimatedSubtotal * 0.1 : estimatedSubtotal * 0.05;
+  // Auto-populate default menu if empty
+  const handleAutoLoadRecommendedMenu = () => {
+    const recommended = [
+      dishCatalog[0], // Paneer Tikka
+      dishCatalog[4], // Jain Shahi Paneer
+      dishCatalog[8], // Biryani
+      dishCatalog[11], // Live Chaat
+      dishCatalog[14] // Shahi Tukda
+    ];
+    recommended.forEach(dish => {
+      onAddMenuItemToTray({ id: dish.vendorId, name: dish.vendorName }, dish);
+    });
+  };
+
+  // Calculate Tray totals (ensure robust non-zero fallback calculation)
+  const effectiveCostPerPerson = trayItems.length > 0 
+    ? trayItems.reduce((acc, item) => acc + (Number(item.price) || 0), 0)
+    : Math.round((Number(activeEvent?.estimatedBudget) || 150000) / (guestCount || 250) * 0.75);
+
+  const effectiveGuests = guestCount > 0 ? guestCount : 250;
+  const estimatedSubtotal = effectiveCostPerPerson * effectiveGuests;
+  
+  // Tier discounts
+  let discountPercent = 0;
+  if (effectiveGuests >= 500) discountPercent = 15;
+  else if (effectiveGuests >= 250) discountPercent = 10;
+  else if (effectiveGuests >= 100) discountPercent = 5;
+
+  const bulkDiscount = Math.round(estimatedSubtotal * (discountPercent / 100));
   const logisticsFee = 2500;
-  const grandTotal = Math.round(estimatedSubtotal - bulkDiscount + logisticsFee);
-  const totalBudget = activeEvent?.estimatedBudget || 200000;
+  const gst = Math.round((estimatedSubtotal - bulkDiscount + logisticsFee) * 0.05);
+  const grandTotal = Math.round(estimatedSubtotal - bulkDiscount + logisticsFee + gst);
+  
+  const totalBudget = Number(activeEvent?.estimatedBudget) || 200000;
   const budgetRemaining = totalBudget - grandTotal;
 
   return (
@@ -283,22 +319,22 @@ export default function MenuPlanner({
           <div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>Visual Menu Planner &amp; Builder</h2>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              Curate individual dishes across certified caterers for <strong style={{ color: 'var(--emerald-800)' }}>{activeEvent?.title || 'Your Event'}</strong>
+              Curate individual dishes across certified caterers for <strong style={{ color: 'var(--emerald-800)' }}>{activeEvent?.title || 'Selected Event'}</strong>
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span className="badge badge-emerald">
-              <Users size={13} /> {guestCount} Guests Target
+              <Users size={13} /> {effectiveGuests} Guests Planned
             </span>
             <span className="badge badge-rating">
-              Budget: ₹{totalBudget?.toLocaleString()}
+              Allocated Budget: ₹{totalBudget?.toLocaleString()}
             </span>
           </div>
         </div>
       </div>
 
       {/* 3-Column Interactive Menu Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 320px', gap: '22px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 340px', gap: '22px', alignItems: 'start' }}>
         
         {/* Left Column: Categories Sidebar */}
         <div className="card" style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -402,7 +438,7 @@ export default function MenuPlanner({
           </div>
         </div>
 
-        {/* Right Column: Sticky "Your Menu" Tray */}
+        {/* Right Column: Sticky "Your Menu" Bill Generator */}
         <div
           className="card"
           style={{
@@ -416,35 +452,46 @@ export default function MenuPlanner({
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ShoppingBag size={18} style={{ color: 'var(--emerald-700)' }} />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Your Menu</h3>
+              <Receipt size={18} style={{ color: 'var(--emerald-700)' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Menu Bill Estimation</h3>
             </div>
             <span className="badge badge-emerald">{trayItems.length} items</span>
           </div>
 
-          {/* Guest Count Selector */}
+          {/* Guest Count Multiplier */}
           <div>
             <label style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              Guests Multiplier
+              Guest Count Multiplier
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
               <input
                 type="number"
                 min="10"
-                max="2000"
+                max="2500"
                 value={guestCount}
                 onChange={(e) => setGuestCount(Number(e.target.value))}
-                style={{ width: '100%', fontSize: '0.9rem', fontWeight: 700, padding: '6px 10px' }}
+                style={{ width: '100%', fontSize: '0.92rem', fontWeight: 700, padding: '8px 10px' }}
               />
               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Heads</span>
             </div>
           </div>
 
           {/* Selected Items List */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
             {trayItems.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '24px 10px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                No dishes selected yet. Click "+ Add to Menu" on any item.
+              <div style={{ textAlign: 'center', padding: '16px 10px', background: '#FAF8F5', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-light)' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginBottom: '8px' }}>
+                  No custom dishes selected yet.
+                </p>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleAutoLoadRecommendedMenu}
+                  style={{ fontSize: '0.75rem', padding: '5px 10px', gap: '4px' }}
+                >
+                  <Sparkles size={13} style={{ color: 'var(--emerald-700)' }} />
+                  <span>Auto-Load Recommended Menu</span>
+                </button>
               </div>
             ) : (
               trayItems.map((item, idx) => (
@@ -465,7 +512,7 @@ export default function MenuPlanner({
                       {item.name}
                     </div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                      ₹{item.price} / head
+                      ₹{item.price} / head • ₹{(item.price * effectiveGuests).toLocaleString()} total
                     </div>
                   </div>
                   <button
@@ -480,43 +527,50 @@ export default function MenuPlanner({
             )}
           </div>
 
-          {/* Cost Summary Box */}
+          {/* Live Generated Bill Summary Box */}
           <div style={{ background: '#FAF8F5', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '4px' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Cost per Person:</span>
-              <span style={{ fontWeight: 700 }}>₹{costPerPerson}</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Rate per Head:</span>
+              <span style={{ fontWeight: 700 }}>₹{effectiveCostPerPerson} / plate</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '4px' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Estimated Total ({guestCount} heads):</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Food Subtotal ({effectiveGuests} guests):</span>
               <span style={{ fontWeight: 700 }}>₹{estimatedSubtotal.toLocaleString()}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '4px' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Scale Tier Discount:</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Bulk Tier Discount ({discountPercent}%):</span>
               <span style={{ color: 'var(--emerald-700)', fontWeight: 700 }}>-₹{bulkDiscount.toLocaleString()}</span>
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '4px' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Insulated Logistics &amp; Warmers:</span>
+              <span>₹{logisticsFee.toLocaleString()}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '4px' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>5% GST Tax:</span>
+              <span>₹{gst.toLocaleString()}</span>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '8px' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Remaining Budget:</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Remaining Event Budget:</span>
               <span style={{ color: budgetRemaining >= 0 ? 'var(--emerald-800)' : 'var(--color-danger)', fontWeight: 700 }}>
                 ₹{budgetRemaining.toLocaleString()}
               </span>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)' }}>
-              <span style={{ fontSize: '0.74rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Grand Total</span>
+              <span style={{ fontSize: '0.74rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Estimated Bill Total</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--emerald-800)' }}>
                 ₹{grandTotal.toLocaleString()}
               </span>
             </div>
           </div>
 
-          {/* CTA */}
+          {/* CTA: Continue to Order */}
           <button
             className="btn-primary"
             onClick={onProceedToOrder}
-            disabled={trayItems.length === 0}
-            style={{ width: '100%', opacity: trayItems.length === 0 ? 0.6 : 1 }}
+            style={{ width: '100%' }}
           >
-            <span>Continue to Order</span>
+            <span>Generate Bill &amp; Order</span>
             <ArrowRight size={15} />
           </button>
         </div>
