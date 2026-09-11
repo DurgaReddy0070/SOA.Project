@@ -1,59 +1,66 @@
 import React, { useState } from 'react';
-import { ShoppingBag, CreditCard, QrCode, Building2, CheckCircle2, ShieldCheck, Trash2, ArrowRight, Sparkles } from 'lucide-react';
+import {
+  ShoppingBag,
+  Trash2,
+  CalendarDays,
+  MapPin,
+  Clock,
+  ShieldCheck,
+  CreditCard,
+  QrCode,
+  Building,
+  CheckCircle2,
+  X,
+  ArrowRight
+} from 'lucide-react';
 import { apiService } from '../services/api';
 
-export default function CheckoutModal({ isOpen, onClose, trayItems, onRemoveItem, activeEvent, onOrderPlaced }) {
+export default function CheckoutModal({
+  isOpen,
+  onClose,
+  trayItems,
+  onRemoveItem,
+  activeEvent,
+  onOrderPlaced
+}) {
   const [paymentMethod, setPaymentMethod] = useState('UPI');
-  const [upiId, setUpiId] = useState('durga.reddy@oksbi');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [successOrder, setSuccessOrder] = useState(null);
+  const [specialNotes, setSpecialNotes] = useState('Ensure cold-chain temperature logger is attached to the delivery van');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
   const guests = activeEvent?.expectedGuests || 250;
+  const costPerPerson = trayItems.reduce((acc, item) => acc + (Number(item.price) || 0), 0);
+  const subtotal = costPerPerson * guests;
+  const bulkDiscount = guests >= 250 ? subtotal * 0.1 : subtotal * 0.05;
+  const logisticsFee = 2500;
+  const gst = Math.round((subtotal - bulkDiscount + logisticsFee) * 0.05);
+  const grandTotal = Math.round(subtotal - bulkDiscount + logisticsFee + gst);
 
-  // Calculate items subtotal
-  const itemsSubtotal = trayItems.reduce((sum, item) => {
-    return sum + (item.price * guests);
-  }, 0);
-
-  // Bulk discount
-  let discountPercent = 0;
-  if (guests >= 500) discountPercent = 15;
-  else if (guests >= 250) discountPercent = 10;
-  else if (guests >= 100) discountPercent = 5;
-
-  const discountAmount = itemsSubtotal * (discountPercent / 100);
-  const discountedFood = itemsSubtotal - discountAmount;
-  const logisticsFee = 1500 + (guests * 5);
-  const taxGst = (discountedFood + logisticsFee) * 0.05;
-  const grandTotal = Math.round((discountedFood + logisticsFee + taxGst) * 100) / 100;
-
-  const handleCheckout = async (e) => {
-    e.preventDefault();
-    if (trayItems.length === 0) return;
-    setIsProcessing(true);
+  const handleConfirmOrder = async () => {
+    setIsSubmitting(true);
+    const vendorId = trayItems[0]?.vendorId || 1;
+    const vendorName = trayItems[0]?.vendorName || 'Green Leaf Pure Veg & Jain Kitchen';
 
     const orderPayload = {
       eventId: activeEvent?.id || 1,
-      eventTitle: activeEvent?.title || 'KL University Tech Fest',
+      eventTitle: activeEvent?.title || 'Wedding Reception Gala',
       organizerId: 1,
       organizerName: 'Durga Prasad Reddy',
       organizerEmail: 'organizer@eventfood.com',
-      vendorId: trayItems[0]?.vendorId || 1,
-      vendorName: trayItems[0]?.vendorName || 'Royal Feast Grand Caterers',
+      vendorId: vendorId,
+      vendorName: vendorName,
       guestCount: guests,
-      totalAmount: itemsSubtotal,
-      discountAmount,
-      taxAmount: taxGst,
-      grandTotal,
-      deliveryDate: activeEvent?.eventDate || '2026-09-20',
+      totalAmount: subtotal,
+      discountAmount: bulkDiscount,
+      taxAmount: gst,
+      grandTotal: grandTotal,
+      deliveryDate: activeEvent?.eventDate || '2026-10-18',
       deliverySlot: activeEvent?.deliveryTimeSlot || '12:30 PM - 02:30 PM',
-      deliveryVenue: activeEvent?.venueAddress || 'KL University Campus, Hyderabad',
-      specialRequests: activeEvent?.specialInstructions || 'Ensure hot buffet setups with temperature check logs',
-      items: trayItems.map(item => ({
-        menuItemId: item.id,
+      deliveryVenue: activeEvent?.venueAddress || 'Grand Palace, Vijayawada',
+      specialRequests: specialNotes,
+      items: trayItems.map((item, idx) => ({
+        menuItemId: item.id || 1000 + idx,
         itemName: item.name,
         category: item.category || 'MAIN_COURSE',
         dietaryType: item.dietaryType || 'VEG',
@@ -63,233 +70,138 @@ export default function CheckoutModal({ isOpen, onClose, trayItems, onRemoveItem
       }))
     };
 
-    // 1. Create order in order-service
-    const createdOrder = await apiService.createOrder(orderPayload);
-
-    // 2. Process payment in payment-service
-    const paymentPayload = {
-      orderId: createdOrder.id,
-      orderNumber: createdOrder.orderNumber,
-      organizerId: 1,
-      amount: grandTotal,
-      paymentMethod,
-      paymentDetails: upiId
-    };
-    const paymentRes = await apiService.processPayment(paymentPayload);
-
-    setIsProcessing(false);
-    setPaymentSuccess(true);
-    setSuccessOrder({ ...createdOrder, paymentResponse: paymentRes });
-    onOrderPlaced(createdOrder);
+    const newOrder = await apiService.createOrder(orderPayload);
+    setIsSubmitting(false);
+    onClose();
+    onOrderPlaced(newOrder);
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.85)',
-      backdropFilter: 'blur(10px)',
-      zIndex: 110,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 20
-    }}>
-      <div className="glass-card" style={{ maxWidth: 700, width: '100%', maxHeight: '92vh', overflowY: 'auto' }}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" style={{ maxWidth: '680px' }} onClick={(e) => e.stopPropagation()}>
         
-        {paymentSuccess ? (
-          <div style={{ textAlign: 'center', padding: '30px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'rgba(16,185,129,0.2)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #10b981' }}>
-              <CheckCircle2 size={36} />
-            </div>
-
-            <div>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Catering Order Confirmed!</h3>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: 4 }}>
-                Order #{successOrder?.orderNumber} • Transaction #{successOrder?.paymentResponse?.transactionId}
-              </p>
-            </div>
-
-            <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 12, padding: 16, width: '100%', textAlign: 'left', fontSize: '0.84rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ color: 'var(--text-muted)' }}>Event:</span>
-                <strong style={{ color: 'white' }}>{successOrder?.eventTitle}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ color: 'var(--text-muted)' }}>Caterer:</span>
-                <span>{successOrder?.vendorName}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ color: 'var(--text-muted)' }}>Guests:</span>
-                <span>{successOrder?.guestCount} Portions</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, fontSize: '1rem', fontWeight: 800, color: '#38bdf8' }}>
-                <span>Grand Total Paid:</span>
-                <span style={{ fontFamily: 'var(--font-mono)' }}>₹{successOrder?.grandTotal?.toLocaleString()}</span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#34d399', fontSize: '0.8rem' }}>
-              <Sparkles size={14} />
-              <span>Automated SMS &amp; Email alerts dispatched to Organizer &amp; Vendor Kitchen</span>
-            </div>
-
-            <button
-              className="btn-primary"
-              onClick={() => {
-                setPaymentSuccess(false);
-                onClose();
-              }}
-              style={{ width: '100%', marginTop: 10 }}
-            >
-              <span>Track Live Delivery Logistics</span>
-              <ArrowRight size={16} />
-            </button>
-          </div>
-        ) : (
+        {/* Modal Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '20px' }}>
           <div>
-            <div className="glass-card-header">
-              <div>
-                <h3 style={{ fontSize: '1.3rem', fontWeight: 800 }}>Event Food Tray &amp; Checkout</h3>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  Event: <strong style={{ color: '#818cf8' }}>{activeEvent?.title || 'Selected Event'}</strong> ({guests} Guests)
-                </p>
-              </div>
-              <button
-                onClick={onClose}
-                style={{ color: 'var(--text-muted)', fontSize: '1.2rem', padding: '4px 8px' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {trayItems.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                Your Event Tray is empty. Select catering packages or dishes from the vendor directory.
-              </div>
-            ) : (
-              <form onSubmit={handleCheckout} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                
-                {/* Tray Items List */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflowY: 'auto' }}>
-                  {trayItems.map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15,23,42,0.8)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: '10px 14px' }}>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'white' }}>{item.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          {item.vendorName} • ₹{item.price}/person × {guests} Guests
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#38bdf8', fontFamily: 'var(--font-mono)' }}>
-                          ₹{(item.price * guests).toLocaleString()}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => onRemoveItem(idx)}
-                          style={{ color: '#f87171', padding: 4 }}
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Price Breakdown */}
-                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: 14, fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Food Base Subtotal:</span>
-                    <span>₹{itemsSubtotal.toLocaleString()}</span>
-                  </div>
-                  {discountPercent > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#34d399' }}>
-                      <span>Bulk Tier Discount ({discountPercent}%):</span>
-                      <span>-₹{discountAmount.toLocaleString()}</span>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Insulated Logistics &amp; Setup:</span>
-                    <span>₹{logisticsFee.toLocaleString()}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>GST (5% Catering Rate):</span>
-                    <span>₹{taxGst.toLocaleString()}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 800, color: '#38bdf8', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 8 }}>
-                    <span>Grand Total:</span>
-                    <span style={{ fontFamily: 'var(--font-mono)' }}>₹{grandTotal.toLocaleString()}</span>
-                  </div>
-                </div>
-
-                {/* Payment Method Selector */}
-                <div>
-                  <label className="form-label">Select Payment Method (Simulated)</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                    {[
-                      { id: 'UPI', label: 'UPI / QR Code', icon: QrCode },
-                      { id: 'CREDIT_CARD', label: 'Credit / Debit Card', icon: CreditCard },
-                      { id: 'CORPORATE_INVOICE', label: 'Corporate Invoice', icon: Building2 }
-                    ].map(method => {
-                      const Icon = method.icon;
-                      return (
-                        <button
-                          key={method.id}
-                          type="button"
-                          onClick={() => setPaymentMethod(method.id)}
-                          style={{
-                            padding: 10,
-                            borderRadius: 8,
-                            background: paymentMethod === method.id ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.03)',
-                            border: `1px solid ${paymentMethod === method.id ? '#6366f1' : 'var(--border-subtle)'}`,
-                            color: paymentMethod === method.id ? 'white' : 'var(--text-secondary)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: 4
-                          }}
-                        >
-                          <Icon size={18} />
-                          <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{method.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {paymentMethod === 'UPI' && (
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label">UPI VPA ID</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={upiId}
-                      onChange={(e) => setUpiId(e.target.value)}
-                    />
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={onClose}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isProcessing}
-                    className="btn-primary"
-                    style={{ flex: 1 }}
-                  >
-                    {isProcessing ? 'Authorizing Payment & Services...' : `Pay ₹${grandTotal.toLocaleString()} & Confirm Order`}
-                  </button>
-                </div>
-              </form>
-            )}
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 800 }}>Confirm Catering Order</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              Finalize items, delivery destination, and simulated escrow payment
+            </p>
           </div>
-        )}
+          <button className="btn-icon" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Event Destination Card */}
+        <div style={{ background: '#FAF8F5', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '16px', marginBottom: '18px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <h4 style={{ fontSize: '1rem', fontWeight: 700 }}>{activeEvent?.title || 'Selected Event'}</h4>
+            <span className="badge badge-emerald">{guests} Guests</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <CalendarDays size={13} style={{ color: 'var(--emerald-700)' }} /> {activeEvent?.eventDate || '2026-10-18'}
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Clock size={13} style={{ color: 'var(--amber-600)' }} /> {activeEvent?.deliveryTimeSlot || '12:30 PM - 02:30 PM'}
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', gridColumn: 'span 2' }}>
+              <MapPin size={13} style={{ color: 'var(--terracotta-500)' }} /> {activeEvent?.venueAddress || 'Grand Palace, Vijayawada'}
+            </span>
+          </div>
+        </div>
+
+        {/* Selected Items Tray */}
+        <div style={{ marginBottom: '18px' }}>
+          <div style={{ fontSize: '0.76rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px' }}>
+            Selected Menu Items ({trayItems.length})
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+            {trayItems.map((item, idx) => (
+              <div
+                key={idx}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px 12px',
+                  background: '#FFFFFF',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: 'var(--radius-md)'
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '0.84rem', fontWeight: 600 }}>{item.name}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    ₹{item.price}/head • Provided by {item.vendorName || 'Caterer'}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.88rem', fontWeight: 700, color: 'var(--emerald-800)' }}>
+                    ₹{(item.price * guests).toLocaleString()}
+                  </span>
+                  <button
+                    onClick={() => onRemoveItem(idx)}
+                    style={{ color: 'var(--color-danger)', padding: '4px', cursor: 'pointer' }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Cost Breakdown */}
+        <div style={{ background: '#FAF8F5', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '6px' }}>
+            <span>Food Subtotal ({guests} guests x ₹{costPerPerson}/head):</span>
+            <span style={{ fontFamily: 'var(--font-mono)' }}>₹{subtotal.toLocaleString()}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '6px' }}>
+            <span>Bulk Scale Tier Discount (10% OFF):</span>
+            <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--emerald-700)', fontWeight: 700 }}>-₹{bulkDiscount.toLocaleString()}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '6px' }}>
+            <span>Insulated Cold-Chain Logistics &amp; Warmers:</span>
+            <span style={{ fontFamily: 'var(--font-mono)' }}>₹{logisticsFee.toLocaleString()}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '10px' }}>
+            <span>GST Tax (5%):</span>
+            <span style={{ fontFamily: 'var(--font-mono)' }}>₹{gst.toLocaleString()}</span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '2px solid var(--border-subtle)', paddingTop: '10px' }}>
+            <div>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>Total Order Value</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.4rem', fontWeight: 800, color: 'var(--emerald-800)' }}>
+                ₹{grandTotal.toLocaleString()}
+              </div>
+            </div>
+            <span className="badge badge-emerald">
+              Razorpay Escrow Protected
+            </span>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button className="btn-secondary" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            className="btn-primary"
+            onClick={handleConfirmOrder}
+            disabled={isSubmitting || trayItems.length === 0}
+            style={{ padding: '10px 24px' }}
+          >
+            <span>{isSubmitting ? 'Dispatching...' : 'Confirm & Place Order'}</span>
+            <ArrowRight size={15} />
+          </button>
+        </div>
+
       </div>
     </div>
   );

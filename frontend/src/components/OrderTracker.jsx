@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { Truck, CheckCircle2, Clock, MapPin, Receipt, ShieldCheck, Thermometer, Phone, AlertCircle, Sparkles, Download } from 'lucide-react';
+import {
+  Truck,
+  CheckCircle2,
+  Clock,
+  MapPin,
+  Receipt,
+  ShieldCheck,
+  Thermometer,
+  Phone,
+  AlertCircle,
+  Download,
+  CalendarDays,
+  User,
+  X
+} from 'lucide-react';
 
 export default function OrderTracker({ orders }) {
   const [selectedOrder, setSelectedOrder] = useState(orders[0] || null);
@@ -10,85 +24,97 @@ export default function OrderTracker({ orders }) {
       case 'PLACED': return 0;
       case 'CONFIRMED': return 1;
       case 'PREPARING': return 2;
-      case 'IN_TRANSIT': return 3;
+      case 'IN_TRANSIT':
+      case 'DISPATCHED': return 3;
       case 'DELIVERED': return 4;
       default: return 1;
     }
   };
 
   const steps = [
-    { title: 'Order Placed', desc: 'Verified by system' },
-    { title: 'Vendor Confirmed', desc: 'Ingredients staged' },
-    { title: 'Kitchen Prep', desc: 'Cooking & thermal packing' },
-    { title: 'In Transit', desc: 'Cold-chain GPS van en route' },
-    { title: 'Delivered & Setup', desc: 'Venue buffet ready' }
+    { title: 'Placed', desc: 'Order logged' },
+    { title: 'Confirmed', desc: 'Vendor accepted' },
+    { title: 'Preparing', desc: 'Kitchen active' },
+    { title: 'Dispatched', desc: 'Van en route' },
+    { title: 'Delivered', desc: 'Venue buffet setup' }
   ];
 
+  const currentStep = selectedOrder ? getStepIndex(selectedOrder.status) : 0;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '26px' }}>
       
       {/* Top Banner */}
-      <div className="glass-card" style={{ padding: '18px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
+      <div className="card" style={{ padding: '20px 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
           <div>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>Live Order Logistics &amp; Status Tracker</h2>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>Live Order Logistics &amp; Status Tracking</h2>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              Real-time monitoring of food preparation, temperature-controlled transit, and venue delivery
+              Real-time temperature monitoring, kitchen dispatch status, and venue buffet arrival timeline
             </p>
           </div>
-          <span className="badge-pill badge-live">
-            <ShieldCheck size={14} /> Quality &amp; Cold-Chain Assured
+          <span className="badge badge-emerald">
+            <ShieldCheck size={14} /> Cold-Chain Assured
           </span>
         </div>
       </div>
 
       {orders.length === 0 ? (
-        <div className="glass-card" style={{ textAlign: 'center', padding: '50px 20px' }}>
-          <p style={{ color: 'var(--text-muted)' }}>No active orders placed yet. Plan an event and select catering to view live tracking.</p>
+        <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <Truck size={36} style={{ color: 'var(--text-muted)', margin: '0 auto 12px auto' }} />
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>No Active Orders</h3>
+          <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+            Select a catering package or create a custom dish tray to initiate live logistics tracking.
+          </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px', alignItems: 'start' }}>
           
-          {/* Orders Selection List */}
+          {/* Left Column: Orders List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#a5b4fc' }}>Active Bulk Orders</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Active Orders ({orders.length})</h3>
+            </div>
+
             {orders.map(order => {
               const isSelected = selectedOrder?.id === order.id;
               return (
                 <div
                   key={order.id}
                   onClick={() => setSelectedOrder(order)}
+                  className="card"
                   style={{
-                    background: isSelected ? 'rgba(99, 102, 241, 0.15)' : 'rgba(15, 23, 42, 0.6)',
-                    border: `1px solid ${isSelected ? '#6366f1' : 'var(--border-subtle)'}`,
-                    borderRadius: '14px',
-                    padding: '16px',
+                    padding: '18px',
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    borderColor: isSelected ? 'var(--emerald-700)' : 'var(--border-light)',
+                    background: isSelected ? 'var(--emerald-50)' : '#FFFFFF',
+                    borderLeft: `4px solid ${isSelected ? 'var(--emerald-700)' : 'transparent'}`
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                     <div>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: '#38bdf8', fontWeight: 700 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, color: 'var(--emerald-800)' }}>
                         {order.orderNumber}
                       </span>
-                      <h4 style={{ fontSize: '0.98rem', fontWeight: 700, color: 'white', marginTop: 2 }}>{order.eventTitle}</h4>
+                      <h4 style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
+                        {order.eventTitle}
+                      </h4>
                     </div>
-                    <span className="badge-pill badge-soa" style={{ fontSize: '0.72rem' }}>
+                    <span className="badge badge-emerald" style={{ fontSize: '0.7rem' }}>
                       {order.status}
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 8 }}>
-                    <span>Vendor: <strong style={{ color: '#cbd5e1' }}>{order.vendorName}</strong></span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                    <span>Vendor: <strong>{order.vendorName}</strong></span>
                     <span>{order.guestCount} Guests</span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '8px' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.92rem', fontWeight: 800, color: 'var(--emerald-800)' }}>
                       ₹{order.grandTotal?.toLocaleString()}
                     </span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
                       Slot: {order.deliverySlot}
                     </span>
                   </div>
@@ -97,221 +123,219 @@ export default function OrderTracker({ orders }) {
             })}
           </div>
 
-          {/* Detailed Selected Order Tracker */}
+          {/* Right Column: Selected Order Detailed Timeline & Telemetry */}
           {selectedOrder && (
-            <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div className="glass-card-header" style={{ marginBottom: 0 }}>
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              
+              {/* Order Header & Invoice Button */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px' }}>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Order {selectedOrder.orderNumber}</h3>
-                    <span className="badge-pill badge-live" style={{ fontSize: '0.7rem' }}>PAID</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--emerald-800)', fontWeight: 700 }}>
+                    {selectedOrder.orderNumber}
+                  </span>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: '2px' }}>
+                    {selectedOrder.eventTitle}
+                  </h3>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Caterer: <strong>{selectedOrder.vendorName}</strong> • {selectedOrder.guestCount} Guests
                   </div>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    Event: {selectedOrder.eventTitle} • Caterer: {selectedOrder.vendorName}
-                  </p>
                 </div>
+
                 <button
                   className="btn-secondary"
                   onClick={() => setShowInvoiceModal(true)}
-                  style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                  style={{ fontSize: '0.8rem', padding: '6px 12px' }}
                 >
                   <Receipt size={14} />
                   <span>Invoice</span>
                 </button>
               </div>
 
-              {/* Progress Stepper */}
-              <div className="order-stepper">
-                <div className="stepper-line">
-                  <div
-                    className="stepper-line-progress"
-                    style={{ width: `${(getStepIndex(selectedOrder.status) / (steps.length - 1)) * 100}%` }}
-                  ></div>
+              {/* Horizontal Timeline */}
+              <div>
+                <div style={{ fontSize: '0.76rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '14px' }}>
+                  Delivery Progress Timeline
                 </div>
 
-                {steps.map((step, idx) => {
-                  const currentIdx = getStepIndex(selectedOrder.status);
-                  const isCompleted = currentIdx > idx;
-                  const isActive = currentIdx === idx;
-                  return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', position: 'relative' }}>
+                  {steps.map((step, idx) => {
+                    const isDone = idx <= currentStep;
+                    const isCurrent = idx === currentStep;
+
+                    return (
+                      <div key={idx} style={{ textAlign: 'center' }}>
+                        <div
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            background: isDone ? 'var(--emerald-700)' : '#EBE5DC',
+                            color: isDone ? '#FFFFFF' : 'var(--text-muted)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 6px auto',
+                            fontSize: '0.8rem',
+                            fontWeight: 700
+                          }}
+                        >
+                          {isDone ? <CheckCircle2 size={16} /> : idx + 1}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', fontWeight: isCurrent ? 700 : 500, color: isDone ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                          {step.title}
+                        </div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                          {step.desc}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Cold-Chain Telemetry & Driver Card */}
+              <div style={{ background: '#FAF8F5', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                      <Thermometer size={14} style={{ color: 'var(--terracotta-500)' }} /> Vehicle Temperature
+                    </div>
+                    <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '4px' }}>
+                      {selectedOrder.vehicleTemp || '68°C (Hot Holding Active)'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                      <Truck size={14} style={{ color: 'var(--emerald-700)' }} /> Logistics Van
+                    </div>
+                    <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '4px' }}>
+                      {selectedOrder.vehicleNo || 'TS 09 UB 4821'}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    Driver: <strong>{selectedOrder.driverName || 'Suresh Rao'}</strong>
+                  </div>
+                  <span className="badge badge-emerald" style={{ fontSize: '0.7rem' }}>
+                    GPS Live
+                  </span>
+                </div>
+              </div>
+
+              {/* Order Line Items */}
+              <div>
+                <div style={{ fontSize: '0.76rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                  Prepared Menu Items
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {selectedOrder.items?.map((item, idx) => (
                     <div
                       key={idx}
-                      className={`step-node ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}`}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontSize: '0.82rem',
+                        padding: '8px 10px',
+                        background: '#FFFFFF',
+                        border: '1px solid var(--border-light)',
+                        borderRadius: 'var(--radius-md)'
+                      }}
                     >
-                      <div className="step-circle">
-                        {isCompleted ? <CheckCircle2 size={20} /> : idx + 1}
+                      <div>
+                        <span style={{ fontWeight: 600 }}>{item.itemName}</span>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                          {item.quantityOrGuests} guests portion
+                        </div>
                       </div>
-                      <div className="step-label">{step.title}</div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Live Logistics Telemetry */}
-              <div style={{ background: 'rgba(15,23,42,0.9)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '12px', padding: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem', marginBottom: 12 }}>
-                  <Thermometer size={16} />
-                  <span>Cold-Chain &amp; Van Telemetry System</span>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', fontSize: '0.82rem' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 8 }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>Temperature Control</div>
-                    <div style={{ fontWeight: 700, color: '#34d399', marginTop: 2 }}>{selectedOrder.vehicleTemp || '70°C (Insulated Hot Pods)'}</div>
-                  </div>
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 8 }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>Logistics Fleet Van</div>
-                    <div style={{ fontWeight: 700, color: 'white', marginTop: 2 }}>{selectedOrder.vehicleNo || 'TS 09 UB 4821'}</div>
-                  </div>
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 8 }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>Driver &amp; Logistics Lead</div>
-                    <div style={{ fontWeight: 700, color: 'white', marginTop: 2 }}>{selectedOrder.driverName || 'Suresh (+91 9848011223)'}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Order Items Breakdown */}
-              <div>
-                <h4 style={{ fontSize: '0.92rem', fontWeight: 700, color: '#cbd5e1', marginBottom: 8 }}>
-                  Menu Items Included ({selectedOrder.guestCount} Portions)
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {selectedOrder.items?.map(item => (
-                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: 8, fontSize: '0.82rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span className={`diet-badge diet-${item.dietaryType?.toLowerCase().replace('_', '')}`}>
-                          {item.dietaryType}
-                        </span>
-                        <span style={{ fontWeight: 600, color: 'white' }}>{item.itemName}</span>
-                      </div>
-                      <span style={{ fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>
-                        ₹{item.unitPrice} × {item.quantityOrGuests}
+                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                        ₹{item.lineTotal?.toLocaleString()}
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Venue & Special Instructions */}
-              <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.82rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)' }}>
-                  <MapPin size={14} style={{ color: '#ec4899' }} />
-                  <span>Venue: <strong>{selectedOrder.deliveryVenue}</strong></span>
-                </div>
-                {selectedOrder.specialRequests && (
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontStyle: 'italic' }}>
-                    Note: "{selectedOrder.specialRequests}"
+              {/* Total Settlement Box */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--emerald-50)', padding: '14px 18px', borderRadius: 'var(--radius-md)', border: '1px solid var(--emerald-100)' }}>
+                <div>
+                  <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--emerald-800)', fontWeight: 700 }}>Total Order Value</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.35rem', fontWeight: 800, color: 'var(--emerald-900)' }}>
+                    ₹{selectedOrder.grandTotal?.toLocaleString()}
                   </div>
-                )}
+                </div>
+                <span className="badge badge-emerald">
+                  Paid &amp; Verified
+                </span>
               </div>
+
             </div>
           )}
+
         </div>
       )}
 
-      {/* Digital Tax Invoice Modal */}
+      {/* Invoice Modal */}
       {showInvoiceModal && selectedOrder && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.85)',
-          backdropFilter: 'blur(10px)',
-          zIndex: 100,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 20
-        }}>
-          <div className="glass-card" style={{ maxWidth: 650, width: '100%', background: '#0f172a', border: '1px solid rgba(255,255,255,0.15)' }}>
-            <div className="glass-card-header">
+        <div className="modal-overlay" onClick={() => setShowInvoiceModal(false)}>
+          <div className="modal-content" style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Tax Invoice &amp; Receipt</h3>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Invoice #{`INV-EFM-${selectedOrder.id}084`}</p>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Official Tax Invoice</h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  EventFood SOA Billing &amp; Payment Service
+                </p>
               </div>
-              <button
-                onClick={() => setShowInvoiceModal(false)}
-                style={{ color: 'var(--text-muted)', fontSize: '1.2rem', padding: '4px 8px' }}
-              >
-                ✕
+              <button className="btn-icon" onClick={() => setShowInvoiceModal(false)}>
+                <X size={18} />
               </button>
             </div>
 
-            <div style={{ padding: '10px 0', fontSize: '0.84rem', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Billed To:</div>
-                  <div style={{ fontWeight: 700, color: 'white' }}>{selectedOrder.organizerName}</div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>{selectedOrder.organizerEmail}</div>
-                </div>
-                <div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Catering Provider:</div>
-                  <div style={{ fontWeight: 700, color: 'white' }}>{selectedOrder.vendorName}</div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>Hyderabad GSTIN: 36AAAFE1234F1Z9</div>
-                </div>
+            <div style={{ background: '#FAF8F5', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '18px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '8px' }}>
+                <span>Invoice No: <strong>INV-EFM-{selectedOrder.id}849</strong></span>
+                <span>Date: <strong>{selectedOrder.deliveryDate}</strong></span>
               </div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                Billed To: <strong>{selectedOrder.organizerName}</strong> ({selectedOrder.eventTitle})
+              </div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                Caterer: <strong>{selectedOrder.vendorName}</strong>
+              </div>
+            </div>
 
-              {/* Items Table */}
-              <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: 12 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8rem' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)' }}>
-                      <th style={{ padding: '6px 0' }}>Item</th>
-                      <th style={{ padding: '6px 0', textAlign: 'center' }}>Guests</th>
-                      <th style={{ padding: '6px 0', textAlign: 'right' }}>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedOrder.items?.map(item => (
-                      <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        <td style={{ padding: '6px 0', color: 'white' }}>{item.itemName}</td>
-                        <td style={{ padding: '6px 0', textAlign: 'center' }}>{item.quantityOrGuests}</td>
-                        <td style={{ padding: '6px 0', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>₹{item.lineTotal?.toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+              {selectedOrder.items?.map((item, idx) => (
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 0', borderBottom: '1px solid var(--border-light)' }}>
+                  <span>{item.itemName} (x{item.quantityOrGuests})</span>
+                  <span style={{ fontFamily: 'var(--font-mono)' }}>₹{item.lineTotal?.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
 
-              {/* Total Calculation breakdown */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.82rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Food Subtotal:</span>
-                  <span>₹{selectedOrder.totalAmount?.toLocaleString()}</span>
-                </div>
-                {selectedOrder.discountAmount > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#34d399' }}>
-                    <span>Bulk Scale Discount:</span>
-                    <span>-₹{selectedOrder.discountAmount?.toLocaleString()}</span>
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>GST (5% Catering Rate):</span>
-                  <span>₹{selectedOrder.taxAmount?.toLocaleString()}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 800, color: '#38bdf8', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 8 }}>
-                  <span>Grand Total Paid:</span>
-                  <span style={{ fontFamily: 'var(--font-mono)' }}>₹{selectedOrder.grandTotal?.toLocaleString()}</span>
-                </div>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '2px solid var(--border-subtle)', marginBottom: '20px' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: 800 }}>Grand Total (Inc. 5% GST):</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.3rem', fontWeight: 800, color: 'var(--emerald-800)' }}>
+                ₹{selectedOrder.grandTotal?.toLocaleString()}
+              </span>
+            </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
-                <button
-                  className="btn-secondary"
-                  onClick={() => alert("Invoice PDF download simulated successfully!")}
-                >
-                  <Download size={14} /> Download PDF
-                </button>
-                <button
-                  className="btn-primary"
-                  onClick={() => setShowInvoiceModal(false)}
-                >
-                  Done
-                </button>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button className="btn-secondary" onClick={() => setShowInvoiceModal(false)}>
+                Close
+              </button>
+              <button className="btn-primary" onClick={() => setShowInvoiceModal(false)}>
+                <Download size={15} />
+                <span>Download PDF</span>
+              </button>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }

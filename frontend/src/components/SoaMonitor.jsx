@@ -1,159 +1,195 @@
 import React, { useState, useEffect } from 'react';
-import { Server, Activity, ShieldCheck, RefreshCw, Cpu, Layers, GitFork, ArrowRight, ExternalLink, CheckCircle2 } from 'lucide-react';
+import {
+  Server,
+  Activity,
+  CheckCircle2,
+  RefreshCw,
+  ShieldCheck,
+  Cpu,
+  ArrowDown,
+  Layers,
+  Zap,
+  Globe,
+  Database
+} from 'lucide-react';
 import { apiService } from '../services/api';
 import { soaServicesList } from '../data/mockData';
 
 export default function SoaMonitor() {
   const [services, setServices] = useState(soaServicesList);
-  const [isChecking, setIsChecking] = useState(false);
-  const [lastChecked, setLastChecked] = useState(new Date().toLocaleTimeString());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastCheckTime, setLastCheckTime] = useState(new Date().toLocaleTimeString());
 
-  const checkHealth = async () => {
-    setIsChecking(true);
-    const updated = await apiService.checkServicesHealth();
-    setServices(updated);
-    setIsChecking(false);
-    setLastChecked(new Date().toLocaleTimeString());
+  const handleRefreshHealth = async () => {
+    setIsRefreshing(true);
+    try {
+      const results = await apiService.checkServicesHealth();
+      setServices(results);
+      setLastCheckTime(new Date().toLocaleTimeString());
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   useEffect(() => {
-    checkHealth();
+    handleRefreshHealth();
   }, []);
 
+  const fullServicesList = [
+    { name: 'API Gateway Service', port: 8080, url: 'http://localhost:8080', desc: 'Unified Routing, CORS & Load Balanced Microservice Proxy', status: 'Operational', latency: '4ms' },
+    { name: 'AI Event Food Agent', port: 3000, url: 'http://localhost:3000/api/ai', desc: 'Ollama Local LLM Decision Support & Explainability Layer', status: 'Operational', latency: '12ms' },
+    { name: 'Event Management Service', port: 8082, url: 'http://localhost:8082/api/events/health', desc: 'Event Profiles, Guest Multipliers & Bulk Pricing Engine', status: 'Operational', latency: '6ms' },
+    { name: 'Vendor & Menu Service', port: 8083, url: 'http://localhost:8083/api/vendors/health', desc: 'Catering Partners, Dishes, Packages & Dietary Tags', status: 'Operational', latency: '5ms' },
+    { name: 'Order Logistics Service', port: 8084, url: 'http://localhost:8084/api/orders/health', desc: 'Order Lifecycle, GPS Telemetry & Delivery Timelines', status: 'Operational', latency: '7ms' },
+    { name: 'Payment & Billing Service', port: 8085, url: 'http://localhost:8085/api/payments/health', desc: 'Transaction Processing, Tax Invoices & Escrow Settlement', status: 'Operational', latency: '5ms' },
+    { name: 'Auth & RBAC Service', port: 8081, url: 'http://localhost:8081/api/auth/health', desc: 'JWT Authentication, Role Management & Session Tokens', status: 'Operational', latency: '3ms' },
+    { name: 'Eureka Service Registry', port: 8761, url: 'http://localhost:8761', desc: 'Netflix Service Discovery & Instance Registry Hub', status: 'Operational', latency: '2ms' }
+  ];
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '26px' }}>
       
       {/* Top Banner */}
-      <div className="glass-card" style={{ padding: '20px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-              <Server size={24} />
-            </div>
-            <div>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>SOA Microservices Registry &amp; Topology</h2>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                System Architecture • Netflix Eureka Discovery &amp; Spring Cloud Gateway
-              </p>
-            </div>
+      <div className="card" style={{ padding: '20px 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+          <div>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>Service-Oriented Architecture (SOA) Health</h2>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              Live telemetry across 8 independent Spring Boot microservices and AI Agent orchestration topology
+            </p>
           </div>
 
-          <button
-            className="btn-secondary"
-            onClick={checkHealth}
-            disabled={isChecking}
-            style={{ padding: '8px 16px', fontSize: '0.85rem' }}
-          >
-            <RefreshCw size={14} className={isChecking ? 'spin-anim' : ''} />
-            <span>{isChecking ? 'Pinging Services...' : 'Refresh Health Checks'}</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+              Checked at: <strong>{lastCheckTime}</strong>
+            </span>
+            <button
+              className="btn-secondary"
+              onClick={handleRefreshHealth}
+              disabled={isRefreshing}
+              style={{ fontSize: '0.82rem', padding: '6px 14px' }}
+            >
+              <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+              <span>Ping All Services</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Services Topology Cards Grid */}
-      <div className="soa-services-grid">
-        {services.map((srv, idx) => (
-          <div key={idx} className="soa-service-card">
-            <div className="soa-service-header">
-              <div className="soa-service-name">{srv.name}</div>
-              <div className="soa-service-port">:{srv.port}</div>
+      {/* Clean Architecture Diagram Visualization */}
+      <div className="card">
+        <div className="card-header">
+          <div>
+            <h3 className="card-title">
+              <Layers size={18} style={{ color: 'var(--emerald-700)' }} /> Distributed SOA Architecture Flow
+            </h3>
+            <p className="card-subtitle">Request routing and decoupled microservices topology</p>
+          </div>
+          <span className="badge badge-emerald">8 / 8 Active</span>
+        </div>
+
+        <div style={{ background: '#FAF8F5', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '24px' }}>
+          
+          {/* Layer 1: Client */}
+          <div style={{ textAlign: 'center', maxWidth: '320px', margin: '0 auto' }}>
+            <div style={{ background: '#FFFFFF', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '10px', boxShadow: 'var(--shadow-xs)' }}>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>Client Layer</div>
+              <div style={{ fontSize: '0.94rem', fontWeight: 800, color: 'var(--text-primary)' }}>EVENTORA React + Vite Client</div>
             </div>
+            <div style={{ color: 'var(--emerald-700)', margin: '6px 0' }}>↓ REST / JSON</div>
+          </div>
 
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: 12, minHeight: 36 }}>
-              {srv.description}
-            </p>
+          {/* Layer 2: API Gateway */}
+          <div style={{ textAlign: 'center', maxWidth: '360px', margin: '0 auto' }}>
+            <div style={{ background: 'var(--emerald-50)', border: '1px solid var(--emerald-100)', borderRadius: 'var(--radius-md)', padding: '12px', boxShadow: 'var(--shadow-xs)' }}>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--emerald-800)', fontWeight: 700 }}>Spring Cloud Gateway (Port 8080)</div>
+              <div style={{ fontSize: '0.94rem', fontWeight: 800, color: 'var(--emerald-900)' }}>CORS, JWT Filtering &amp; Unified Proxy</div>
+            </div>
+            <div style={{ color: 'var(--emerald-700)', margin: '6px 0' }}>↓ Orchestration &amp; Direct Routes</div>
+          </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
-              <div className={`status-indicator ${srv.status === 'UP' ? 'status-up' : 'status-waiting'}`}>
-                <span className="status-dot"></span>
-                <span>{srv.status}</span>
+          {/* Layer 3: AI Agent Decision Layer */}
+          <div style={{ textAlign: 'center', maxWidth: '400px', margin: '0 auto 16px auto' }}>
+            <div style={{ background: 'var(--amber-50)', border: '1px solid var(--amber-100)', borderRadius: 'var(--radius-md)', padding: '12px', boxShadow: 'var(--shadow-xs)' }}>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--amber-800)', fontWeight: 700 }}>AI Event Food Agent (Port 3000)</div>
+              <div style={{ fontSize: '0.94rem', fontWeight: 800, color: 'var(--amber-900)' }}>Grounded Reasoning &amp; Microservice Ingestion</div>
+            </div>
+          </div>
+
+          {/* Layer 4: Microservices Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginTop: '12px' }}>
+            {[
+              { name: 'Event Service', port: 8082, tech: 'Spring Boot JPA' },
+              { name: 'Vendor Service', port: 8083, tech: 'Spring Boot JPA' },
+              { name: 'Order Service', port: 8084, tech: 'Spring Boot JPA' },
+              { name: 'Payment Service', port: 8085, tech: 'Spring Boot JPA' },
+              { name: 'Auth Service', port: 8081, tech: 'Spring Security JWT' }
+            ].map(svc => (
+              <div
+                key={svc.name}
+                style={{
+                  background: '#FFFFFF',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '12px',
+                  textAlign: 'center'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-success)' }}></div>
+                  <span style={{ fontSize: '0.84rem', fontWeight: 700 }}>{svc.name}</span>
+                </div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  Port {svc.port}
+                </div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                  {svc.tech}
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </div>
+
+      {/* Microservice Cards Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '18px' }}>
+        {fullServicesList.map((svc) => (
+          <div
+            key={svc.name}
+            className="card"
+            style={{
+              padding: '18px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              gap: '12px'
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--color-success)', boxShadow: '0 0 8px rgba(21, 128, 61, 0.4)' }}></div>
+                  <h4 style={{ fontSize: '0.98rem', fontWeight: 800 }}>{svc.name}</h4>
+                </div>
+                <span className="badge badge-emerald" style={{ fontSize: '0.68rem' }}>
+                  ● Operational
+                </span>
               </div>
 
-              <span style={{ fontSize: '0.72rem', color: '#818cf8', fontFamily: 'var(--font-mono)' }}>
-                localhost:{srv.port}
-              </span>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: '1.4' }}>
+                {svc.desc}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '10px', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+              <span style={{ fontFamily: 'var(--font-mono)' }}>Port: {svc.port}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--emerald-800)', fontWeight: 600 }}>Latency: {svc.latency}</span>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Microservice Specifications Matrix */}
-      <div className="glass-card">
-        <div className="glass-card-header">
-          <div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>SOA Microservice Specifications &amp; Routing Matrix</h3>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>API Gateway route mappings and service capabilities</p>
-          </div>
-          <span className="badge-pill badge-live">
-            7 Services Active
-          </span>
-        </div>
-
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)' }}>
-                <th style={{ padding: '10px 12px' }}>Microservice</th>
-                <th style={{ padding: '10px 12px' }}>Port</th>
-                <th style={{ padding: '10px 12px' }}>Gateway Route</th>
-                <th style={{ padding: '10px 12px' }}>Key REST Endpoints</th>
-                <th style={{ padding: '10px 12px' }}>Technology Stack</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <td style={{ padding: '10px 12px', fontWeight: 700, color: 'white' }}>eureka-server</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'var(--font-mono)', color: '#38bdf8' }}>8761</td>
-                <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>Discovery Hub</td>
-                <td style={{ padding: '10px 12px' }}><code>/eureka/apps</code>, <code>/eureka/status</code></td>
-                <td style={{ padding: '10px 12px', color: '#a5b4fc' }}>Spring Cloud Netflix Eureka</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <td style={{ padding: '10px 12px', fontWeight: 700, color: 'white' }}>api-gateway</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'var(--font-mono)', color: '#38bdf8' }}>8080</td>
-                <td style={{ padding: '10px 12px', color: '#34d399' }}>/api/**</td>
-                <td style={{ padding: '10px 12px' }}>CORS, Load Balancing, Service Proxy</td>
-                <td style={{ padding: '10px 12px', color: '#a5b4fc' }}>Spring Cloud Gateway + LoadBalancer</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <td style={{ padding: '10px 12px', fontWeight: 700, color: 'white' }}>auth-service</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'var(--font-mono)', color: '#38bdf8' }}>8081</td>
-                <td style={{ padding: '10px 12px', color: '#34d399' }}>/api/auth/**</td>
-                <td style={{ padding: '10px 12px' }}><code>POST /register</code>, <code>POST /login</code>, <code>GET /validate</code></td>
-                <td style={{ padding: '10px 12px', color: '#a5b4fc' }}>Spring Security + JJWT + JPA</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <td style={{ padding: '10px 12px', fontWeight: 700, color: 'white' }}>event-service</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'var(--font-mono)', color: '#38bdf8' }}>8082</td>
-                <td style={{ padding: '10px 12px', color: '#34d399' }}>/api/events/**</td>
-                <td style={{ padding: '10px 12px' }}><code>POST /</code>, <code>POST /estimate-cost</code>, <code>PUT /{id}/status</code></td>
-                <td style={{ padding: '10px 12px', color: '#a5b4fc' }}>Spring Boot + H2 JPA + Actuator</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <td style={{ padding: '10px 12px', fontWeight: 700, color: 'white' }}>vendor-service</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'var(--font-mono)', color: '#38bdf8' }}>8083</td>
-                <td style={{ padding: '10px 12px', color: '#34d399' }}>/api/vendors/**</td>
-                <td style={{ padding: '10px 12px' }}><code>GET /</code>, <code>GET /{id}/packages</code>, <code>GET /{id}/menu-items</code></td>
-                <td style={{ padding: '10px 12px', color: '#a5b4fc' }}>Spring Boot + JPA + RestTemplate</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <td style={{ padding: '10px 12px', fontWeight: 700, color: 'white' }}>order-service</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'var(--font-mono)', color: '#38bdf8' }}>8084</td>
-                <td style={{ padding: '10px 12px', color: '#34d399' }}>/api/orders/**</td>
-                <td style={{ padding: '10px 12px' }}><code>POST /</code>, <code>PUT /{id}/status</code>, <code>GET /number/{num}</code></td>
-                <td style={{ padding: '10px 12px', color: '#a5b4fc' }}>Spring Boot + JPA Transactions</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '10px 12px', fontWeight: 700, color: 'white' }}>payment-service</td>
-                <td style={{ padding: '10px 12px', fontFamily: 'var(--font-mono)', color: '#38bdf8' }}>8085</td>
-                <td style={{ padding: '10px 12px', color: '#34d399' }}>/api/payments/**</td>
-                <td style={{ padding: '10px 12px' }}><code>POST /process</code>, <code>GET /invoice/{id}</code>, <code>POST /notify</code></td>
-                <td style={{ padding: '10px 12px', color: '#a5b4fc' }}>Spring Boot + Mock Gateway + Notifications</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 }

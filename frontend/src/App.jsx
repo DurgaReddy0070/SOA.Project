@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import Header from './components/Header';
+import Sidebar from './components/Sidebar';
+import TopNav from './components/TopNav';
+import DashboardOverview from './components/DashboardOverview';
 import PlannerEstimator from './components/PlannerEstimator';
 import VendorDirectory from './components/VendorDirectory';
+import MenuPlanner from './components/MenuPlanner';
 import OrderTracker from './components/OrderTracker';
+import PaymentsView from './components/PaymentsView';
+import AiPlanner from './components/AiPlanner';
 import VendorDashboard from './components/VendorDashboard';
 import SoaMonitor from './components/SoaMonitor';
 import CheckoutModal from './components/CheckoutModal';
@@ -10,7 +15,7 @@ import { apiService } from './services/api';
 import { initialVendors, initialEvents, initialOrders } from './data/mockData';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('planner');
+  const [activeTab, setActiveTab] = useState('overview');
   const [currentRole, setCurrentRole] = useState('ORGANIZER');
 
   const [vendors, setVendors] = useState(initialVendors || []);
@@ -18,7 +23,12 @@ export default function App() {
   const [orders, setOrders] = useState(initialOrders || []);
   const [activeEvent, setActiveEvent] = useState(initialEvents?.[0] || null);
 
-  const [trayItems, setTrayItems] = useState([]);
+  const [trayItems, setTrayItems] = useState([
+    { id: 101, name: 'Paneer Tikka Angara', price: 140, vendorId: 1, vendorName: 'Royal Feast Grand Caterers', category: 'STARTER', dietaryType: 'VEG' },
+    { id: 201, name: 'Jain Shahi Paneer (Satvik)', price: 150, vendorId: 3, vendorName: 'Green Leaf Pure Veg & Jain Kitchen', category: 'MAIN_COURSE', dietaryType: 'JAIN' },
+    { id: 301, name: 'Hyderabadi Zafrani Mutton Dum Biryani', price: 320, vendorId: 1, vendorName: 'Royal Feast Grand Caterers', category: 'BREADS_RICE', dietaryType: 'NON_VEG' },
+    { id: 501, name: 'Shahi Tukda with Malai Rabdi', price: 90, vendorId: 1, vendorName: 'Royal Feast Grand Caterers', category: 'DESSERT', dietaryType: 'VEG' }
+  ]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   // Load initial data from APIs or fallback
@@ -46,9 +56,7 @@ export default function App() {
     if (currentRole === 'VENDOR') {
       setActiveTab('vendor-ops');
     } else if (currentRole === 'ADMIN') {
-      setActiveTab('soa-monitor');
-    } else {
-      setActiveTab('planner');
+      setActiveTab('soa-health');
     }
   }, [currentRole]);
 
@@ -60,7 +68,7 @@ export default function App() {
 
   const handleSelectEventForMenu = (event) => {
     setActiveEvent(event);
-    setActiveTab('vendors');
+    setActiveTab('menu-planner');
   };
 
   const handleAddPackageToTray = (vendor, pkg) => {
@@ -82,10 +90,10 @@ export default function App() {
       id: menuItem.id,
       name: menuItem.name,
       price: menuItem.price,
-      vendorId: vendor.id,
-      vendorName: vendor.name,
-      category: menuItem.category,
-      dietaryType: menuItem.dietaryType
+      vendorId: vendor?.id || 1,
+      vendorName: vendor?.name || 'Catering Partner',
+      category: menuItem.category || 'MAIN_COURSE',
+      dietaryType: menuItem.dietaryType || 'VEG'
     };
     setTrayItems([...trayItems, item]);
   };
@@ -97,7 +105,7 @@ export default function App() {
   const handleOrderPlaced = (newOrder) => {
     setOrders([newOrder, ...orders]);
     setTrayItems([]);
-    setActiveTab('tracker');
+    setActiveTab('orders');
   };
 
   const handleOrderStatusUpdated = (orderId, newStatus) => {
@@ -105,52 +113,96 @@ export default function App() {
   };
 
   return (
-    <div className="app-container">
-      <Header
+    <div className="app-layout">
+      {/* Left Sidebar */}
+      <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         currentRole={currentRole}
         setCurrentRole={setCurrentRole}
         trayCount={trayItems.length}
-        openCheckout={() => setIsCheckoutOpen(true)}
       />
 
-      <main className="main-content">
-        {activeTab === 'planner' && (
-          <PlannerEstimator
-            events={events}
-            onEventCreated={handleEventCreated}
-            onSelectEventForMenu={handleSelectEventForMenu}
-          />
-        )}
+      {/* Main Content Area */}
+      <div className="main-wrapper">
+        <TopNav
+          activeTab={activeTab}
+          trayCount={trayItems.length}
+          openCheckout={() => setIsCheckoutOpen(true)}
+          onAskAi={() => setActiveTab('ai-assistant')}
+        />
 
-        {activeTab === 'vendors' && (
-          <VendorDirectory
-            vendors={vendors}
-            activeEvent={activeEvent}
-            onAddPackageToTray={handleAddPackageToTray}
-            onAddMenuItemToTray={handleAddMenuItemToTray}
-            trayItems={trayItems}
-          />
-        )}
+        <main className="content-body">
+          {activeTab === 'overview' && (
+            <DashboardOverview
+              events={events}
+              orders={orders}
+              vendors={vendors}
+              onNavigate={setActiveTab}
+              onCreateEventModal={() => setActiveTab('events')}
+              onSelectEvent={handleSelectEventForMenu}
+            />
+          )}
 
-        {activeTab === 'tracker' && (
-          <OrderTracker orders={orders} />
-        )}
+          {activeTab === 'events' && (
+            <PlannerEstimator
+              events={events}
+              onEventCreated={handleEventCreated}
+              onSelectEventForMenu={handleSelectEventForMenu}
+            />
+          )}
 
-        {activeTab === 'vendor-ops' && (
-          <VendorDashboard
-            orders={orders}
-            vendors={vendors}
-            onOrderStatusUpdated={handleOrderStatusUpdated}
-          />
-        )}
+          {activeTab === 'vendors' && (
+            <VendorDirectory
+              vendors={vendors}
+              activeEvent={activeEvent}
+              onAddPackageToTray={handleAddPackageToTray}
+              onAddMenuItemToTray={handleAddMenuItemToTray}
+              trayItems={trayItems}
+            />
+          )}
 
-        {activeTab === 'soa-monitor' && (
-          <SoaMonitor />
-        )}
-      </main>
+          {activeTab === 'menu-planner' && (
+            <MenuPlanner
+              vendors={vendors}
+              activeEvent={activeEvent}
+              trayItems={trayItems}
+              onAddMenuItemToTray={handleAddMenuItemToTray}
+              onRemoveTrayItem={handleRemoveTrayItem}
+              onProceedToOrder={() => setIsCheckoutOpen(true)}
+            />
+          )}
 
+          {activeTab === 'orders' && (
+            <OrderTracker orders={orders} />
+          )}
+
+          {activeTab === 'payments' && (
+            <PaymentsView orders={orders} />
+          )}
+
+          {activeTab === 'ai-assistant' && (
+            <AiPlanner
+              activeEvent={activeEvent}
+              onNavigateToMenu={() => setActiveTab('menu-planner')}
+            />
+          )}
+
+          {activeTab === 'vendor-ops' && (
+            <VendorDashboard
+              orders={orders}
+              vendors={vendors}
+              onOrderStatusUpdated={handleOrderStatusUpdated}
+            />
+          )}
+
+          {activeTab === 'soa-health' && (
+            <SoaMonitor />
+          )}
+        </main>
+      </div>
+
+      {/* Checkout Modal */}
       <CheckoutModal
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
