@@ -1,0 +1,20 @@
+{
+  "name": "event-food-management-soa-ai",
+  "version": "1.0.0",
+  "description": "Online Food & Delivery Event Food Management System with SOA Microservices & AI Agent",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "soa",
+    "microservices",
+    "ai-agent",
+    "ollama",
+    "event-food",
+    "react"
+  ],
+  "author": "Y Durga Prasad Reddy & Toram Charam",
+  "license": "MIT"
+}
