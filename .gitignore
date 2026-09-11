@@ -1,0 +1,27 @@
+# Build directories
+target/
+dist/
+build/
+
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Tooling & binaries
+.tools/
+
+# IDE / Editor configuration
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Environment files
+.env
+.env.local
